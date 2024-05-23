@@ -1,0 +1,53 @@
+#include "secdialog.h"
+#include "ui_secdialog.h"
+#include "mainwindow.h"
+
+
+secDialog::secDialog(QWidget *parent):
+    QDialog(parent),
+    ui(new Ui::secDialog)
+{
+    ui->setupUi(this);
+
+    ui->u_username->setPlaceholderText("Enter your name");
+    ui->p_password->setPlaceholderText("Enter your password");
+    ui->c_confirm->setPlaceholderText("confirm your password");
+}
+
+secDialog::~secDialog()
+{
+    delete ui;
+}
+
+
+void secDialog::on_signBtn_clicked()
+{
+    QString username, password, confirm;
+    username = ui->u_username->text();
+    password = ui->p_password->text();
+    confirm = ui->c_confirm->text();
+
+    QSqlDatabase mydb=QSqlDatabase::addDatabase("QSQLITE");
+    mydb.setDatabaseName("D:/miniProject database/database.db");
+    if(!mydb.open()){
+        QMessageBox::information(this, "failed", "Not connected");
+    }
+    mydb.open();
+    QSqlQuery qry;
+    qry.prepare("insert into registration (username,password,confirm) values ('"+username+"', '"+password+"', '"+confirm+"')");
+
+    if(qry.exec())
+    {
+
+        QMessageBox::information(this, "Saved", "Your data was saved successfully, please log in");
+        mydb.close();
+
+    }
+
+    else
+    {
+        QMessageBox::warning(this, "Failed", "Your data was not saved, please try again");
+    }
+}
+
+

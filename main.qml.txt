@@ -1,0 +1,203 @@
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+
+ApplicationWindow {
+    id: mainWindow
+    visible: true
+    width: 400
+    height: 600 // Keep window height at 600
+    title: "Customer Support Chatbot"
+
+    property bool welcomeMessageShown: false
+
+    Rectangle {
+        id: gradientBackground
+        anchors.fill: parent
+        color: "#4E54C8" // Start Color: Blue
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#4E54C8" } // Start Color: Blue
+            GradientStop { position: 1.0; color: "#8F94FB" } // End Color: Purple
+        }
+
+        ListView {
+            id: messageListView
+            width: mainWindow.width
+            height: gradientBackground.height - inputField.height
+            clip: true
+            model: responseModel
+            delegate: MessageBubble {
+                message: model.query
+                response: model.response
+                isBot: true
+                width: parent.width
+                anchors.right: isBot ? undefined : parent.right
+                anchors.left: isBot ? parent.left : undefined
+
+            }
+            anchors.top: gradientBackground.top // Anchor to the top of the gradient background
+            anchors.bottom: inputField.top // Anchor to the bottom of the input field
+            preferredHighlightBegin: ListView.End // Ensure messages are displayed from the bottom
+
+            onContentYChanged: {
+                if (contentY > 0 && contentY + height >= contentHeight) {
+                        positionViewAtEnd();
+                }
+            }
+
+            ScrollBar.vertical: ScrollBar {
+                id: messageScrollBar
+                active: true
+                policy: ScrollBar.AlwaysOn
+
+                background: Rectangle {
+                    width: messageScrollBar.width
+                    height: messageScrollBar.height
+                    color: gradientBackground.color // Match color with gradient
+                }
+
+                // Custom scrollbar indicator
+                ScrollIndicator.vertical: ScrollIndicator {
+                    visible: messageScrollBar.visible
+                    width: messageScrollBar.width
+                    height: messageScrollBar.height * messageListView.height / messageListView.contentHeight
+
+                    background: Rectangle {
+                        color: gradientBackground.color // Match color with gradient
+                        border.color: gradientBackground.color // Match color with gradient
+                        border.width: 1 // Set border width to 1 for the black line
+                    }
+
+                    Behavior on y {
+                        NumberAnimation {
+                            duration: 300
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    RowLayout {
+        id: inputField
+        width: mainWindow.width
+        height: 40 // Set height of input field
+        spacing: 10
+        anchors.bottom: parent.bottom // Anchor to the bottom of the parent
+        Layout.alignment: Qt.AlignHCenter // Center horizontally
+        anchors.bottomMargin: 10
+
+        Rectangle {
+            id: inputFieldRect
+            width: parent.width - sendButton.width - 20
+            height: parent.height
+            color: "#333333" // Set the background color of the input field
+            border.color: "blue" // Set the border color
+            border.width: 1 // Set the border width to 0
+            radius: height / 2 // Make the rectangle round
+
+            TextInput {
+                id: userInput
+                width: inputFieldRect.width - 20 // Adjust width to leave space for padding
+                height: parent.height // Match the height of the parent Rectangle
+                verticalAlignment: TextInput.AlignVCenter // Align vertically centered
+                anchors.left: parent.left // Align to the left of the parent Rectangle
+                leftPadding: 10 // Add left padding for space
+                rightPadding: sendButton.width + 10 // Add right padding for space
+                color: "white" // Text color
+                font.pixelSize: 14
+                wrapMode: TextEdit.Wrap // Enable text wrapping
+                maximumLength: 50 // Set maximum length of input text
+
+                onAccepted: {
+                    if (userInput.text.trim() === "") {
+                        placeholderText.visible = true;
+                    } else {
+                        responseModel.addQuery(userInput.text); // Add the query to the model when Enter key is pressed
+                        userInput.text = ""; // Clear the input field after adding the query
+                        mainWindow.welcomeMessageShown = true;
+                        placeholderText.visible = false;
+                        messageListView.positionViewAtEnd(); // Move ListView to show new messages
+                    }
+                }
+
+                // Handler to show/hide placeholder text
+                onTextChanged: {
+                    if (userInput.text.trim() === "") {
+                        placeholderText.visible = true;
+                    } else {
+                        placeholderText.visible = false;
+                    }
+                }
+
+                focus: true // Set focus initially
+            }
+
+            PlaceholderText {
+                id: placeholderText
+                text: "Enter your message here..."
+                padding: 10
+                color: "#808080"
+                anchors.margins: parent
+                visible: !mainWindow.welcomeMessageShown
+            }
+        }
+
+        Item {
+            width: 40
+            height: 40
+            anchors.margins: 0
+
+            MouseArea {
+                id: sendButton
+                anchors.fill: parent
+                onClicked: {
+                    responseModel.addQuery(userInput.text); // Add the query to the model when Send button is clicked
+                    userInput.text = ""; // Clear the input field after adding the query
+                    mainWindow.welcomeMessageShown = true;
+                    placeholderText.visible = false;
+                    messageListView.positionViewAtEnd(); // Move ListView to show new messages
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2 // Set radius to half of the width to make it a circle
+                    color: "#333333" // Set the background color of the button
+                    border.width: 1 // No border
+                    border.color: "blue"
+                    anchors.leftMargin: -10
+
+                    Image {
+                        id: arrowImage
+                        source: "qrc:/arrow.png" // Provide the correct path to your arrow image file
+                        anchors.centerIn: parent
+                        width: parent.width * 0.7
+                        height: parent.height * 0.7
+                    }
+                }
+            }
+        }
+    }
+
+    Text {
+        text: "Welcome, " + username // Display the username
+        anchors.right: parent.right // Anchor to the right
+        anchors.top: parent.top // Anchor to the top
+        font.pixelSize: 14 // Set font size
+        color: "white" // Text color
+    }
+
+    Connections {
+        target: responseModel
+        function onQueryAdded(query) {
+            responseModel.fetchResponses(query); // Fetch responses when a query is added
+        }
+    }
+
+    Component.onCompleted: {
+        if (!welcomeMessageShown) {
+            responseModel.addQuery("Welcome to the Chatbot!");
+            mainWindow.welcomeMessageShown = true;
+        }
+    }
+}

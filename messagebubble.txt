@@ -1,0 +1,62 @@
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+
+Item {
+    id: messageBubble
+    property bool isBot: false
+    property string message: ""
+    property string response: "" // Add property for response
+
+    // Set the width to accommodate the widest content
+    width: Math.max(textItem.width, responseItem.width) + 20
+
+    // Calculate the total height of both messages and some spacing
+    height: Math.max(textItem.height, responseItem.height) + 40
+
+    // Rectangle for the query message
+    Rectangle {
+        id: queryBubble
+        width: parent.width / 2 - 10
+        height: textItem.height + 20
+        color: "#c1f1f5" // Bubble color for the query
+        border.color: isBot ? "#53c8d8" : "#cccccc" // Border color for the query
+        border.width: 1
+        radius: 10
+        anchors.right: parent.right // Align the bubble to the right
+        visible: message !== "" // Show query bubble only if message is not empty
+
+        Text {
+            id: textItem
+            text: message
+            wrapMode: Text.WordWrap
+            color: "#000000" // Text color
+            width: parent.width - 20 // Set the text width to bubble width minus padding
+            anchors.right: parent.right // Align the text to the right within the bubble
+            anchors.verticalCenter: parent.verticalCenter // Center the text vertically within the bubble
+        }
+    }
+
+    // Rectangle for the response message or "Sorry, I can't understand" message
+    Rectangle {
+        id: responseBubble
+        width: parent.width / 2 - 10
+        height: responseItem.height + 20
+        color: "#f1f1f1" // Bubble color for the response
+        border.color: isBot ? "#53c8d8" : "#cccccc" // Border color for response or sorry message
+        border.width: 1
+        radius: 10
+        anchors.left: response === "" ? undefined : parent.left // Align the bubble to the left only if response is not empty
+        anchors.top: queryBubble.bottom // Position below the query bubble
+
+        Text {
+            id: responseItem
+            text: response !== "" ? response : "Sorry, I can't understand."
+            wrapMode: Text.WordWrap
+            color: "#000000" // Text color
+            width: parent.width - 20 // Set the text width to bubble width minus padding
+            anchors.left: parent.left // Align the text to the left within the bubble
+            anchors.verticalCenter: parent.verticalCenter // Center the text vertically within the bubble
+        }
+    }
+}

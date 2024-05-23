@@ -1,0 +1,46 @@
+#ifndef RESPONSEMODEL_H
+#define RESPONSEMODEL_H
+
+#include <QAbstractListModel>
+#include <QFile>
+#include <QTextStream>
+
+class ResponseModel : public QAbstractListModel
+{
+    Q_OBJECT
+public:
+    explicit ResponseModel(QObject *parent = nullptr);
+
+    enum {
+        QueryRole = Qt::UserRole + 1,
+        ResponseRole
+    };
+
+    struct ResponseItem {
+        QString query;
+        QString response;
+    };
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    QHash<int, QByteArray> roleNames() const override;
+
+
+signals:
+    void queryAdded(const QString &query);
+    void responseNotFound(const QString &query);
+
+
+public slots:
+    void addQuery(const QString &query);
+    void fetchResponses(const QString &query);
+
+
+private:
+    QList<ResponseItem> m_responses;
+    bool m_welcomeMessageShown = false;
+    void loadResponsesFromFile();
+};
+
+#endif // RESPONSEMODEL_H

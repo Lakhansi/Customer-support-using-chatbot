@@ -1,0 +1,9 @@
+hello: Hi there! How can I help you today?
+how are you?: I'm just a bot, so I'm always doing fine!
+thank you: You're welcome!
+goodbye: Goodbye! Have a great day!
+why my product is late: Sorry! but it is late because of the weather issues
+when will i received the product: soon! It is been shipped by tomorrow at 12:00 PM
+can i cancelled the order: Yes you can do that! just make sure that you cancelled your order within 24 hours.
+can you provide me the detailes of a delivery person: Name - raju kumar\ncontact No - +911234567884
+

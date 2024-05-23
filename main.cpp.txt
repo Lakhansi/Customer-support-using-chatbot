@@ -1,0 +1,37 @@
+#include <QApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include "ResponseModel.h"
+#include "mainwindow.h"
+
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+
+    // Create the response model
+    ResponseModel responseModel;
+
+    // Create main window
+    MainWindow mainWindow;
+
+    // Load QML application engine
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("responseModel", &responseModel);
+    const QUrl url(QStringLiteral("qrc:/main.qml"));
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+        &app, [url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl)
+                QCoreApplication::exit(-1);
+        }, Qt::QueuedConnection);
+
+    // Connect to the MainWindow's loginSuccessful signal
+    QObject::connect(&mainWindow, &MainWindow::loginSuccessful, [&engine, &mainWindow, url](const QString &username) {
+        engine.rootContext()->setContextProperty("username", username); // Pass the username to QML
+        engine.load(url); // Load QML file after successful login
+        mainWindow.close();
+    });
+
+    mainWindow.show(); // Show the main window
+
+    return app.exec();
+}

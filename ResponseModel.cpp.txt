@@ -1,0 +1,123 @@
+#include "ResponseModel.h"
+#include <QDebug>
+#include <QRegularExpression>
+
+
+ResponseModel::ResponseModel(QObject *parent)
+    : QAbstractListModel(parent)
+{
+    // No need to load responses from file here, it should be loaded only when needed
+
+}
+
+int ResponseModel::rowCount(const QModelIndex &parent) const
+{
+    if (parent.isValid())
+        return 0;
+
+    return m_responses.count();
+}
+
+QVariant ResponseModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid())
+        return QVariant();
+
+    const ResponseItem &item = m_responses[index.row()];
+    switch (role) {
+    case QueryRole:
+        return QVariant::fromValue(item.query); // Wrap item.query in QVariant
+    case ResponseRole:
+        return QVariant::fromValue(item.response); // Wrap item.response in QVariant
+    default:
+        return QVariant::fromValue(QString()); // Return an empty string wrapped in QVariant
+    }
+
+}
+
+QVariant ResponseModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (role != Qt::DisplayRole)
+        return QVariant();
+
+    if (orientation == Qt::Horizontal)
+        return QString("Column %1").arg(section);
+    else
+        return QString("Row %1").arg(section);
+}
+QHash<int, QByteArray> ResponseModel::roleNames() const
+{
+    QHash<int, QByteArray> roles;
+    roles[QueryRole] = "query";
+    roles[ResponseRole] = "response";
+    return roles;
+}
+
+void ResponseModel::addQuery(const QString &query)
+{
+    // If the welcome message is not yet shown, add it as a response
+    if (!m_welcomeMessageShown) {
+        m_welcomeMessageShown = true;
+        beginInsertRows(QModelIndex(), rowCount(), rowCount());
+        m_responses.append(ResponseItem{"", "Welcome to the Chatbot!"});
+        endInsertRows();
+        return;
+    }
+
+    // Add other queries as usual
+    beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    m_responses.append({ query, QString() });
+    endInsertRows();
+
+    // Emit signal indicating query added with the query as parameter
+    emit queryAdded(query);
+
+    // Fetch responses when a query is added
+    fetchResponses(query);
+}
+
+void ResponseModel::fetchResponses(const QString &query)
+{
+    if (query.isEmpty()) {
+        // Add the welcome message to the model
+        addQuery("");
+        return;
+    }
+
+    QFile file("C:/Users/HP/Documents/miniProject/responses.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Error: Unable to open file";
+        return;
+    }
+
+    QTextStream in(&file);
+    QString lowercaseQuery = query.toLower(); // Convert query to lowercase
+    bool foundResponse = false; // Flag to track if response is found for the query
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        QStringList parts = line.split(":");
+        if (parts.size() == 2) {
+            QString storedQuery = parts[0].trimmed().toLower(); // Convert stored query to lowercase
+            QString response = parts[1].trimmed();
+            if (lowercaseQuery.contains(storedQuery) || storedQuery.contains(lowercaseQuery)) {
+                // Update the response for the corresponding query
+                for (int i = 0; i < m_responses.size(); ++i) {
+                    if (m_responses[i].query == query) {
+                        m_responses[i].response = response;
+                        QModelIndex index = createIndex(i, 0);
+                        emit dataChanged(index, index, {ResponseRole}); // Emit dataChanged signal for the response role
+                        foundResponse = true; // Set flag to true since response is found
+                        break;
+                    }
+                }
+                break; // No need to continue searching if response is found
+            }
+        }
+    }
+
+    file.close();
+
+    if (!foundResponse) {
+        emit responseNotFound(query); // Emit signal indicating no response found for the query
+    }
+}

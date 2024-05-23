@@ -1,0 +1,66 @@
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include "secdialog.h"
+
+
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+
+void MainWindow::on_pushButton_2_clicked()
+{
+
+    secDialog sec;
+    sec.setModal(true);
+    sec.exec();
+
+}
+
+
+void MainWindow::on_pushButton_clicked()
+{
+    QString username, password;
+    username = ui->user_login->text();
+    password = ui->pass_login->text();
+
+    QSqlDatabase my=QSqlDatabase::addDatabase("QSQLITE");
+    my.setDatabaseName("D:/miniProject database/database.db");
+    if(!my.open()){
+        QMessageBox::information(this, "failed", "Not connected");
+    }
+
+    QSqlQuery qry;
+
+    if(qry.exec("select * from registration where username='"+username+"' and password='"+password+"'"))
+    {
+        int count = 0;
+        while(qry.next()){
+            count++;
+        }
+        if(count==1){
+            QMessageBox::information(this, "Login", "Login successfully");
+            emit loginSuccessful(username);
+
+        }
+
+
+        if(count>1){
+            QMessageBox::information(this, "Error", "Something went wrong");
+        }
+        if(count<1){
+            QMessageBox::information(this, "Incorrect", "username and password are wrong");
+        }
+    }
+
+}
+
